@@ -135,17 +135,17 @@ class Blockchain {
                 Error(error);
             }
             let data = {address: address, message: message, signature: signature, star: star};
-            let block = new BlockClass.Block(data);
+            let blockchain = new BlockClass.Block(data);
 
             if(isVerified === false) {
                 console.log('submitStar verification rejecting block' + isVerified);
-                reject(block);
+                reject(blockchain);
                 return;
             }
             console.log('submitStar verification rejecting block' + isVerified);
             // await for the block addition
-            await this._addBlock(block);
-            resolve(block);
+            await this._addBlock(blockchain);
+            resolve(blockchain);
         });
     }
 
@@ -158,9 +158,9 @@ class Blockchain {
     getBlockByHash(hash) {
         let self = this;
         return new Promise((resolve) => {
-            let block = self.chain.find(p => p.hash == hash);
-            if(block) {
-                resolve(block);
+            let blockchain = self.chain.find(c => c.hash == hash);
+            if(blockchain) {
+                resolve(blockchain);
             } else {
                 resolve(null);
             }
@@ -175,9 +175,9 @@ class Blockchain {
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve) => {
-            let block = self.chain.filter(p => p.height === height)[0];
-            if(block){
-                resolve(block);
+            let blockchain = self.chain.filter(c => c.height === height)[0];
+            if(blockchain){
+                resolve(blockchain);
             } else {
                 resolve(null);
             }
@@ -196,8 +196,8 @@ class Blockchain {
         return new Promise((resolve) => {
             // Reference: https://knowledge.udacity.com/questions/282668
             self.chain.forEach(async(b) => {
-                let blockData = await b.getBData();
-                if (blockData.address === address) results.push(blockData);
+                let blockchainData = await b.getBData();
+                if (blockchainData.address === address) results.push(blockchainData);
             });
             resolve(results);
         });
@@ -213,9 +213,9 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve) => {
-            self.chain.forEach(block => {
-                if(block.validate() === false){
-                    errorLog.push(block);
+            self.chain.forEach(blockchain => {
+                if(blockchain.validate() === false){
+                    errorLog.push(blockchain);
                 }
             });
             resolve(errorLog);
