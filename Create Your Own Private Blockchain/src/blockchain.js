@@ -125,24 +125,24 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             let messageTime = parseInt(message.split(':')[1]);
             let currentTime = parseInt(Date.now().toString().slice(0,-3));
-            let isVerified = false;
+            let isMessageVerified = false;
             if((currentTime - messageTime) > 5 * 60){
                 reject(new Error('submitStar: more than five minutes have elapsed'))
             }
             try {
-                isVerified = bitcoinMessage.verify(message, address, signature)
+                isMessageVerified = bitcoinMessage.verify(message, address, signature)
             } catch (error) {
                 Error(error);
             }
-            let data = {address: address, message: message, signature: signature, star: star};
+            let data = {address, message, signature, star};
             let blockchain = new BlockClass.Block(data);
 
-            if(isVerified === false) {
-                console.log('submitStar verification rejecting block' + isVerified);
+            if(isMessageVerified === false) {
+                console.log('submitStar verification rejecting block' + isMessageVerified);
                 reject(blockchain);
                 return;
             }
-            console.log('submitStar verification rejecting block' + isVerified);
+            console.log('submitStar verification rejecting block' + isMessageVerified);
             // await for the block addition
             await this._addBlock(blockchain);
             resolve(blockchain);
