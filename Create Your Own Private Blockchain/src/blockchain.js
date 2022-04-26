@@ -67,22 +67,23 @@ class Blockchain {
             // set height
             block.height = self.height + 1;
             // set timestamp
-            block.time = new Date().getTime().toString().slice(0,-3);
-            if(self.height == -1) { // special genesis block case
+            block.time = Date.now().toString().slice(0,-3);
+            if(self.height == -1) {
+                // genesis Block doesn't have previous hash
                 block.previousBlockHash = null;
             } else {
-                // set previous block hash
+                // block 1 should have Genesis Block hash
                 block.previousBlockHash = this.hash;
             }
-            // set current block hash
+            // SHA256 to get current hash value
             block.hash = SHA256(JSON.stringify(block)).toString();
-            // push block on to blockchain
+            // push block to the stack
             self.chain.push(block);
-            // update blockchain height
+            // increase the height
             this.height += 1;
+            // resolve the promise
             resolve(block);
         });
-        //TODO: _addBlock complete
     }
 
     /**
@@ -95,13 +96,11 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            // message format
-            // <WALLET_ADDRESS>:${new Date().getTime().toString().slice(0,-3)}:starRegistry
+            // The user will request the application to send a message to be signed using a Wallet and in this way verify the ownership over the wallet address.
+            // The message format will be:
             var message = `${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`;
-            console.log('requestMessageOwnership: ' + message);
             resolve(message);
         });
-        //TODO: requestMessageOwnershipVerification complete
     }
 
     /**
@@ -113,7 +112,7 @@ class Blockchain {
      * 1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
      * 2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
      * 3. Check if the time elapsed is less than 5 minutes
-     * 4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+     * 4. Verify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
      * 5. Create the block and add it to the chain
      * 6. Resolve with the block added.
      * @param {*} address
@@ -125,11 +124,11 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
             let messageTime = parseInt(message.split(':')[1]);
-            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            if((currentTime - messageTime) > 300){
+            let currentTime = parseInt(Date.now().toString().slice(0,-3));
+            let isVerified = false;
+            if((currentTime - messageTime) > 5 * 60){
                 reject(new Error('submitStar: more than five minutes have elapsed'))
             }
-            var isVerified = false;
             try {
                 isVerified = bitcoinMessage.verify(message, address, signature)
             } catch (error) {
@@ -138,16 +137,16 @@ class Blockchain {
             let data = {address: address, message: message, signature: signature, star: star};
             let block = new BlockClass.Block(data);
 
-            if(!isVerified) {
-                console.log('submitStar verification: ' + isVerified + ' rejecting block');
+            if(isVerified === false) {
+                console.log('submitStar verification rejecting block' + isVerified);
                 reject(block);
                 return;
             }
-            console.log('submitStar verification: ' + isVerified + ' adding block');
+            console.log('submitStar verification rejecting block' + isVerified);
+            // await for the block addition
             await this._addBlock(block);
             resolve(block);
         });
-        //TODO: submitStar incomplete
     }
 
     /**
@@ -158,7 +157,7 @@ class Blockchain {
      */
     getBlockByHash(hash) {
         let self = this;
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let block = self.chain.find(p => p.hash == hash);
             if(block) {
                 resolve(block);
@@ -166,7 +165,6 @@ class Blockchain {
                 resolve(null);
             }
         });
-        //TODO: getBlockByHash complete
     }
 
     /**
@@ -176,7 +174,7 @@ class Blockchain {
      */
     getBlockByHeight(height) {
         let self = this;
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let block = self.chain.filter(p => p.height === height)[0];
             if(block){
                 resolve(block);
@@ -195,23 +193,14 @@ class Blockchain {
     getStarsByWalletAddress(address) {
         let self = this;
         let results = [];
-        return new Promise((resolve, reject) => {
-            // Method derived from: https://knowledge.udacity.com/questions/282668
+        return new Promise((resolve) => {
+            // Reference: https://knowledge.udacity.com/questions/282668
             self.chain.forEach(async(b) => {
                 let blockData = await b.getBData();
                 if (blockData.address === address) results.push(blockData);
             });
             resolve(results);
-
-            //TODO: figure out why this doesn't work (data promises are not complete)
-            // self.chain.forEach(async (block) => {
-            //     let blockData = await block.getBData();
-            //     data.push(blockData);
-            // });
-            // let results = data.filter(p => p.address === address)
-            // resolve(results);
         });
-        //TODO: getStarsByWalletAddress complete
     }
 
     /**
@@ -223,17 +212,15 @@ class Blockchain {
     validateChain() {
         let self = this;
         let errorLog = [];
-        return new Promise(async (resolve, reject) => {
+        return new Promise(async (resolve) => {
             self.chain.forEach(block => {
-                if(!block.validate()){
+                if(block.validate() === false){
                     errorLog.push(block);
                 }
             });
-            resolve(errorLog)
+            resolve(errorLog);
         });
-        //TODO: validateChain complete
     }
-
 }
 
 module.exports.Blockchain = Blockchain;
